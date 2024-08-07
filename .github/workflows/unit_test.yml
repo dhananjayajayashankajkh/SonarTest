@@ -33,5 +33,5 @@ jobs:
           DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST }}
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
         run: |
-          databricks workspace import-dir ./.github/ /github_test/
+          databricks workspace import-dir ./Sourcecode/ /github_test/
 
