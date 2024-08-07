@@ -24,4 +24,13 @@ jobs:
           DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST }}
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
         run: |
+          databricks repos ls
+
+      - name: List databricks workspace
+        env:
+          # Note the host is an "environment variable" in the Github Environment
+          # while the token is a "secret" in the Github Environment
+          DATABRICKS_HOST: ${{ vars.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+        run: |
           databricks workspace ls
