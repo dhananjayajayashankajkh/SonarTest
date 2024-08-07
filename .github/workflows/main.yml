@@ -1,0 +1,146 @@
+name: CI Pipeline
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.9
+
+      - name: Install Dependencies
+        run: pip install requests
+
+      - name: Azure CLI
+        uses: azure/azure-cli-action@v1
+        with:
+          inlineScript: |
+            $key = az account get-access-token --resource 2ff814a6-3304-4ab8-85cb-cd0e6f879c1d --query accessToken --output tsv
+            echo "RESULT=$key" >> $GITHUB_ENV
+
+      - name: Configure Databricks CLI
+        run: |
+          databricks configure --token --host https://adb-7606258981091383.3.azuredatabricks.net --token ${{ secrets.RESULT }}
+
+      - name: Deploy Notebooks to Workspace
+        uses: riserrad/azdo-databricks-deploynotebooks@v0
+        with:
+          notebooks-folder-path: src
+          workspace-folder: /testing-env-jmsl_fresh_procurement_optimization/
+
+      - name: Copy Files to Temp
+        uses: actions/upload-artifact@v3
+        with:
+          name: temp-files
+          path: |
+            conf/jmsl_fresh_procurement_optimization_unit_test.json
+
+      - name: Submit Unit Test Run Job
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.9
+        run: |
+          import json
+          import requests
+          import os
+          import sys
+          import time
+
+          with open('D:/a/_temp/jmsl_fresh_procurement_optimization_unit_test.json') as f:
+              values = json.load(f)
+
+          access = 'Bearer ' + os.getenv('RESULT')
+
+          headers = {
+              'Authorization': access,
+              'Content-Type': 'application/json'
+          }
+
+          shard = 'https://adb-7606258981091383.3.azuredatabricks.net'
+          resp = requests.post(shard + '/api/2.0/jobs/runs/submit', data=json.dumps(values), headers=headers)
+
+          runjson = resp.text
+          print("runjson:" + runjson)
+
+          d = json.loads(runjson)
+          runid = d['run_id']
+          print(f'##vso[task.setvariable variable=JOBRUNID;]{runid}')
+
+      - name: Waiting for Job to Finish
+        run: |
+          import json
+          import requests
+          import time
+          from datetime import datetime
+
+          access = 'Bearer ' + os.getenv('RESULT')
+          headers = {
+              'Authorization': access,
+              'Content-Type': 'application/json'
+          }
+          shard = 'https://adb-7606258981091383.3.azuredatabricks.net'
+          runid = os.getenv('JOBRUNID')
+          waiting = True
+
+          while waiting:
+              time.sleep(10)
+              jobresp = requests.get(shard + '/api/2.0/jobs/runs/get?run_id=' + str(runid), headers=headers)
+              jobjson = jobresp.text
+              j = json.loads(jobjson)
+              current_state = j['state']['life_cycle_state']
+              runid = j['run_id']
+              log = str(datetime.now()) + " - run_id :" + str(runid) + "- state: " + str(current_state) + '\n'
+              sys.stdout.write(log)
+              if current_state in ['TERMINATED', 'INTERNAL_ERROR', 'SKIPPED']:
+                  result = j['state']['result_state']
+                  if result in 'SUCCESS':
+                      print('Job ran successfully')
+                      break
+                  else:
+                      print('Job is in ' + result + " state")
+                      print("Job Failed", file=sys.stderr)
+                      break
+
+      - name: Getting Test Results
+        uses: azure/azure-cli-action@v1
+        with:
+          inlineScript: |
+            echo "Configuring databricks access"
+            echo "[DEFAULT]" > $GITHUB_WORKSPACE/.databrickscfg
+            echo "host = https://adb-7606258981091383.3.azuredatabricks.net" >> $GITHUB_WORKSPACE/.databrickscfg
+            echo "token = ${{ secrets.RESULT }}" >> $GITHUB_WORKSPACE/.databrickscfg
+            databricks fs cp dbfs:/use-cases/testing-env-jmsl_fresh_procurement_optimization/ results -r
+
+      - name: Publish Test Results
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results
+          path: results/**/*.xml
+
+      - name: Delete Test Notebook Environment
+        uses: azure/azure-cli-action@v1
+        with:
+          inlineScript: |
+            echo "Configuring databricks access"
+            echo "[DEFAULT]" > $GITHUB_WORKSPACE/.databrickscfg
+            echo "host = https://adb-7606258981091383.3.azuredatabricks.net" >> $GITHUB_WORKSPACE/.databrickscfg
+            echo "token = ${{ secrets.RESULT }}" >> $GITHUB_WORKSPACE/.databrickscfg
+            databricks workspace delete -r /testing-env-jmsl_fresh_procurement_optimization/
+
+      - name: Delete Test Results from Databricks
+        uses: azure/azure-cli-action@v1
+        with:
+          inlineScript: |
+            echo "Configuring databricks access"
+            echo "[DEFAULT]" > $GITHUB_WORKSPACE/.databrickscfg
+            echo "host = https://adb-7606258981091383.3.azuredatabricks.net" >> $GITHUB_WORKSPACE/.databrickscfg
+            echo "token = ${{ secrets.RESULT }}" >> $GITHUB_WORKSPACE/.databrickscfg
+            databricks fs rm dbfs:/use-cases/testing-env-jmsl_fresh_procurement_optimization/ -r
