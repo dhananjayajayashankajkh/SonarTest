@@ -1,0 +1,36 @@
+name: Automated Pull Request
+
+on:
+  workflow_dispatch:
+
+jobs:
+  updateAuthor:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checking out code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUBPAT }}
+
+      - name: Extract git commit data
+        uses: rlespinasse/git-commit-data-action@v1.x
+
+      - name: Update Author Information
+        run: echo ${{ env.GIT_COMMIT_AUTHOR_NAME }} > AUTHOR
+
+      - name: Debug Environment Variables
+        run: |
+          echo "Author Name: ${{ env.GIT_COMMIT_AUTHOR_NAME }}"
+          echo "Author Email: ${{ env.GIT_COMMIT_AUTHOR_EMAIL }}"
+
+      - name: Raise PR
+        uses: peter-evans/create-pull-request@v3
+        with:
+          branch: "test"
+          base: main
+          title: "Demo for Auto PR"
+          committer: ${{ env.GIT_COMMIT_AUTHOR_NAME }} <${{ env.GIT_COMMIT_AUTHOR_EMAIL }}>
+          author: ${{ env.GIT_COMMIT_AUTHOR_NAME }} <${{ env.GIT_COMMIT_AUTHOR_EMAIL }}>
+          body: "This is to show automatic PR creation"
+          token: ${{ secrets.GITHUBPAT }}
+          delete-branch: true
