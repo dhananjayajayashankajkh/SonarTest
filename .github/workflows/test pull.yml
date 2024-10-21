@@ -11,17 +11,23 @@ jobs:
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUBPAT }}
+          persist-credentials: false
 
       - name: Extract git commit data
         uses: rlespinasse/git-commit-data-action@v1.x
 
+      - name: Debug Commit Data
+        run: |
+          echo "Commit Author Name: ${{ env.GIT_COMMIT_AUTHOR_NAME }}"
+          echo "Commit Author Email: ${{ env.GIT_COMMIT_AUTHOR_EMAIL }}"
+
       - name: Update Author Information
         run: echo ${{ env.GIT_COMMIT_AUTHOR_NAME }} > AUTHOR
 
-      - name: Debug Environment Variables
+      - name: Set up Git
         run: |
-          echo "Author Name: ${{ env.GIT_COMMIT_AUTHOR_NAME }}"
-          echo "Author Email: ${{ env.GIT_COMMIT_AUTHOR_EMAIL }}"
+          git config --global user.name "${{ env.GIT_COMMIT_AUTHOR_NAME }}"
+          git config --global user.email "${{ env.GIT_COMMIT_AUTHOR_EMAIL }}"
 
       - name: Raise PR
         uses: peter-evans/create-pull-request@v3
