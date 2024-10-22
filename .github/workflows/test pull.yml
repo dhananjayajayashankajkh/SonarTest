@@ -2,14 +2,19 @@
 on:
   push:
     branches:
-      - test01
+      - develop
 
 jobs:
   pull-request:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - name: pull-request
+      - name: Checkout code
+        uses: actions/checkout@v3
+        
+      - name: Authenticate with GitHub CLI
+        run: echo "${{ secrets.PAT_TOKEN }}" | gh auth login --with-token
+        
+      - name: Create pull request
         uses: diillson/auto-pull-request@v1.0.1
         with:
           destination_branch: "test"
