@@ -1,29 +1,15 @@
-name: Automated Pull Request
-
+# File: .github/workflows/pull-request.yml
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - test01
 
 jobs:
   pull-request:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-
-      - name: Create Pull Request
+      - name: pull-request
         uses: diillson/auto-pull-request@v1.0.1
         with:
-          source_branch: "main"                                 # If blank, default: triggered branch
-          destination_branch: "test"                            # If blank, default: master
-          pr_title: "Pulling ${{ github.ref }} into test"      # Title of pull request
-          pr_body: |                                            # Full markdown support
-            :crown: *An automated PR*
-
-            _Created by [diillson/auto-pull-request](https://github.com/diillson/auto-pull-request)_
-          pr_template: ".github/PULL_REQUEST_TEMPLATE.md"      # Path to pull request template
-          pr_reviewer: "diillson,worker"                       # Comma-separated list (no spaces)
-          pr_assignee: "diillson,worker"                       # Comma-separated list (no spaces)
-          pr_label: "auto-pr"                                   # Comma-separated list (no spaces)
-          pr_milestone: "Milestone 1"                           # Milestone name (optional)
-          pr_draft: true                                        # Creates pull request as draft
-          pr_allow_empty: true                                  # Creates pull request even if there are no changes
-          github_token: ${{ secrets.GITHUBPAT }}               # Custom GitHub token
+          destination_branch: "test"
