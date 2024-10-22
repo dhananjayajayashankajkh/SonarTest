@@ -2,7 +2,7 @@
 on:
   push:
     branches:
-      - develop
+      - test01
 
 jobs:
   pull-request:
