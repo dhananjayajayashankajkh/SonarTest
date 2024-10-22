@@ -1,5 +1,3 @@
-name: Automated Pull Request test
-
 on:
   workflow_dispatch:
 
@@ -22,17 +20,12 @@ jobs:
       # Checkout the remote repo with a `repo` scoped PAT
       - uses: actions/checkout@v2
         with:
-          token: ${{ secrets.PAT }}
+          token: ${{ secrets.GITHUBPAT }}
           repository: dhananjayajayashankajkh/SonarTest
           ref: test01
 
       # Make changes to pull request here
 
-      - uses: peter-evans/create-pull-request@v3
-        with:
-          token: ${{ secrets.PAT }}
-          branch: main
-          
       - name: Update Author Information
         run: |
           echo "${{ env.GIT_COMMIT_AUTHOR_NAME }}" > AUTHOR
@@ -41,11 +34,11 @@ jobs:
       - name: Raise PR
         uses: peter-evans/create-pull-request@v3
         with:
-          branch: "main"
-          base: "test01"
+          token: ${{ secrets.GITHUBPAT }}  # Ensure this matches the secret name
+          branch: "main"  # Source branch
+          base: "test01"  # Target branch
           title: "Demo for Auto PR"
           committer: ${{ env.GIT_COMMIT_AUTHOR_NAME }} <${{ env.GIT_COMMIT_AUTHOR_EMAIL }}>
           author: ${{ env.GIT_COMMIT_AUTHOR_NAME }} <${{ env.GIT_COMMIT_AUTHOR_EMAIL }}>
           body: "This is to show automatic PR creation"
-          token: ${{ secrets.GITHUBPAT }}
           delete-branch: true
