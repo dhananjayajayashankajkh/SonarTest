@@ -19,6 +19,20 @@ jobs:
       - name: Extract git commit data
         uses: rlespinasse/git-commit-data-action@v1.x
 
+      # Checkout the remote repo with a `repo` scoped PAT
+      - uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.PAT }}
+          repository: dhananjayajayashankajkh/SonarTest
+          ref: test01
+
+      # Make changes to pull request here
+
+      - uses: peter-evans/create-pull-request@v3
+        with:
+          token: ${{ secrets.PAT }}
+          branch: main
+          
       - name: Update Author Information
         run: |
           echo "${{ env.GIT_COMMIT_AUTHOR_NAME }}" > AUTHOR
