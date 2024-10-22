@@ -21,7 +21,7 @@ jobs:
 
       - name: Check for changes
         run: |
-          git fetch origin main
+          git fetch origin test01
           if [ -z "$(git log main..HEAD)" ]; then
             echo "No changes to be made.";
             exit 1;  # Exit the job if there are no changes
