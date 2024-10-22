@@ -1,4 +1,4 @@
-name: Automated Pull Request test
+name: Automated Pull Request
 
 on:
   workflow_dispatch:
@@ -10,8 +10,22 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v4
 
+      - name: Set up Git credentials
+        run: |
+          git config --global user.email "${{ secrets.GITHUB_EMAIL }}"
+          git config --global user.name "${{ secrets.GITHUB_USERNAME }}"
+          git config --global url."https://${{ secrets.GITHUBPAT }}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
+
       - name: Extract git commit data
         uses: rlespinasse/git-commit-data-action@v1.x
+
+      - name: Check for changes
+        run: |
+          git fetch origin main
+          if [ -z "$(git log main..HEAD)" ]; then
+            echo "No changes to be made.";
+            exit 1;  # Exit the job if there are no changes
+          fi
 
       - name: Update Author Information
         run: |
@@ -21,11 +35,11 @@ jobs:
       - name: Raise PR
         uses: peter-evans/create-pull-request@v3
         with:
-          branch: "test01"
-          base: "main"
+          branch: "main"
+          base: "test01"
           title: "Demo for Auto PR"
           committer: ${{ env.GIT_COMMIT_AUTHOR_NAME }} <${{ env.GIT_COMMIT_AUTHOR_EMAIL }}>
           author: ${{ env.GIT_COMMIT_AUTHOR_NAME }} <${{ env.GIT_COMMIT_AUTHOR_EMAIL }}>
           body: "This is to show automatic PR creation"
           token: ${{ secrets.GITHUBPAT }}
-          delete-branch: false
+          delete-branch: true
